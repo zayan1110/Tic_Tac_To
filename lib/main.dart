@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tic_tac_toe/homePage.dart';
+import 'package:tic_tac_toe/vsComputer.dart';
+import 'package:tic_tac_toe/vsPerson.dart';
 
 void main() {
   runApp(const MyApp());
@@ -14,6 +16,11 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: HomePage(),
+      routes: {
+        '/VsComputer': (context) => VsComputer(),
+        '/VsPerson': (context) =>
+            VsPerson(), // assuming VsComputer is a StatelessWidget
+      },
     );
   }
 }
