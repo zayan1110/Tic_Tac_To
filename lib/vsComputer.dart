@@ -1,5 +1,4 @@
 import 'dart:math';
-
 import 'package:flutter/material.dart';
 
 class VsComputer extends StatefulWidget {
@@ -11,127 +10,98 @@ class VsComputer extends StatefulWidget {
 
 class _VsComputerState extends State<VsComputer> {
   bool ohTurn = true;
-  List<String> displayExOh = [
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-  ];
+  List<String> displayExOh = List.generate(9, (_) => '');
+  final myTextStyle = const TextStyle(color: Colors.white, fontSize: 30);
+  int exScore = 0, ohScore = 0, filledBoxes = 0;
 
-  var myTextStyle = TextStyle(color: Colors.white, fontSize: 30);
-  int exScore = 0;
-  int ohSecore = 0;
-  int filledBoxes = 0;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[800],
       appBar: AppBar(
         leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Center(
-          child: Text(
-            'Tic Tac Toe      ',
-            style: TextStyle(color: Colors.white, fontSize: 30),
-          ),
+        title: const Center(
+          child: Text('Tic Tac Toe',
+              style: TextStyle(color: Colors.white, fontSize: 30)),
         ),
         backgroundColor: Colors.grey[800],
       ),
       body: Column(
         children: [
-          Expanded(
-              child: Container(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(30),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Player x',
-                        style: myTextStyle,
-                      ),
-                      Text(
-                        exScore.toString(),
-                        style: myTextStyle,
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(30),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Computer o',
-                        style: myTextStyle,
-                      ),
-                      Text(
-                        ohSecore.toString(),
-                        style: myTextStyle,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          )),
-          Expanded(
-            flex: 3,
-            child: GridView.builder(
-              itemCount: 9,
-              gridDelegate:
-                  SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3),
-              itemBuilder: (BuildContext context, int index) {
-                return GestureDetector(
-                  onTap: () {
-                    _tabbed(index);
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                        border: Border.all(
-                      color: Color.fromARGB(255, 141, 141, 141),
-                    )),
-                    child: Center(
-                        child: Text(
-                      displayExOh[index],
-                      style: TextStyle(color: Colors.white, fontSize: 40),
-                    )),
-                  ),
-                );
-              },
-            ),
+          Expanded(child: _scoreBoard()),
+          Expanded(flex: 3, child: _gameBoard()),
+          Expanded(child: _resetButton()),
+        ],
+      ),
+    );
+  }
+
+  Widget _scoreBoard() {
+    return Container(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _playerScore('Player x', exScore),
+          _playerScore('Computer o', ohScore),
+        ],
+      ),
+    );
+  }
+
+  Widget _playerScore(String name, int score) {
+    return Padding(
+      padding: const EdgeInsets.all(30),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(name, style: myTextStyle),
+          Text(score.toString(), style: myTextStyle),
+        ],
+      ),
+    );
+  }
+
+  Widget _gameBoard() {
+    return GridView.builder(
+      itemCount: 9,
+      gridDelegate:
+          const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3),
+      itemBuilder: (context, index) => GestureDetector(
+        onTap: () => _tabbed(index),
+        child: _gameCell(index),
+      ),
+    );
+  }
+
+  Widget _gameCell(int index) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: const Color.fromARGB(255, 141, 141, 141)),
+      ),
+      child: Center(
+        child: Text(
+          displayExOh[index],
+          style: const TextStyle(color: Colors.white, fontSize: 40),
+        ),
+      ),
+    );
+  }
+
+  Widget _resetButton() {
+    return Container(
+      child: Column(
+        children: [
+          const Text(
+            'Tic Tac Toe',
+            style: TextStyle(
+                fontSize: 20, color: Color.fromARGB(255, 162, 162, 162)),
           ),
-          Expanded(
-            child: Container(
-              child: Column(
-                children: [
-                  Text(
-                    'Tic            Tac            Toe',
-                    style: TextStyle(
-                        fontSize: 20,
-                        color: const Color.fromARGB(255, 162, 162, 162)),
-                  ),
-                  ElevatedButton(
-                      onPressed: () {
-                        _resetGame();
-                      },
-                      child: Icon(Icons.restart_alt))
-                ],
-              ),
-            ),
+          ElevatedButton(
+            onPressed: _resetGame,
+            child: const Icon(Icons.restart_alt),
           ),
         ],
       ),
@@ -139,83 +109,77 @@ class _VsComputerState extends State<VsComputer> {
   }
 
   void _tabbed(int index) {
-    setState(() {
-      if (displayExOh[index] == '') {
+    if (displayExOh[index].isEmpty) {
+      setState(() {
         displayExOh[index] = 'x';
-        filledBoxes += 1;
+        filledBoxes++;
+      });
+      _checkWinner();
+      if (filledBoxes < 9) {
+        _computerMove();
       }
-    });
-    _checkWinner();
-    if (filledBoxes < 9) {
-      _computerMove();
     }
   }
 
   void _computerMove() {
-    int computerIndex;
-    List<int> availableMoves = [];
+    final availableMoves = <int>[];
     for (int i = 0; i < 9; i++) {
-      if (displayExOh[i] == '') {
+      if (displayExOh[i].isEmpty) {
         availableMoves.add(i);
       }
     }
-    computerIndex = availableMoves[Random().nextInt(availableMoves.length)];
+    final computerIndex =
+        availableMoves[Random().nextInt(availableMoves.length)];
     setState(() {
       displayExOh[computerIndex] = 'o';
-      filledBoxes += 1;
+      filledBoxes++;
     });
     _checkWinner();
   }
 
   void _checkWinner() {
-    if (displayExOh[0] == displayExOh[1] &&
-        displayExOh[0] == displayExOh[2] &&
-        displayExOh[0] != '') {
-      _showWinDialog(displayExOh[0]);
+    final winningPositions = [
+      [0, 1, 2],
+      [3, 4, 5],
+      [6, 7, 8],
+      [0, 3, 6],
+      [1, 4, 7],
+      [2, 5, 8],
+      [0, 4, 8],
+      [2, 4, 6],
+    ];
+    for (final positions in winningPositions) {
+      final symbol = displayExOh[positions[0]];
+      if (symbol.isNotEmpty &&
+          symbol == displayExOh[positions[1]] &&
+          symbol == displayExOh[positions[2]]) {
+        _showWinDialog(symbol);
+        return;
+      }
     }
-
-    if (displayExOh[3] == displayExOh[4] &&
-        displayExOh[3] == displayExOh[5] &&
-        displayExOh[3] != '') {
-      _showWinDialog(displayExOh[3]);
-    }
-
-    if (displayExOh[6] == displayExOh[7] &&
-        displayExOh[6] == displayExOh[8] &&
-        displayExOh[6] != '') {
-      _showWinDialog(displayExOh[6]);
-    }
-
-    if (displayExOh[0] == displayExOh[3] &&
-        displayExOh[0] == displayExOh[6] &&
-        displayExOh[0] != '') {
-      _showWinDialog(displayExOh[0]);
-    }
-
-    if (displayExOh[1] == displayExOh[4] &&
-        displayExOh[1] == displayExOh[7] &&
-        displayExOh[1] != '') {
-      _showWinDialog(displayExOh[1]);
-    }
-
-    if (displayExOh[2] == displayExOh[5] &&
-        displayExOh[2] == displayExOh[8] &&
-        displayExOh[2] != '') {
-      _showWinDialog(displayExOh[2]);
-    }
-
-    if (displayExOh[0] == displayExOh[4] &&
-        displayExOh[0] == displayExOh[8] &&
-        displayExOh[0] != '') {
-      _showWinDialog(displayExOh[0]);
-    }
-
-    if (displayExOh[2] == displayExOh[4] &&
-        displayExOh[2] == displayExOh[6] &&
-        displayExOh[2] != '') {
-      _showWinDialog(displayExOh[2]);
-    } else if (filledBoxes == 9) {
+    if (filledBoxes == 9) {
       _showDrawDialog();
+    }
+  }
+
+  void _showWinDialog(String winner) {
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('WINNER IS $winner'),
+        actions: [
+          ElevatedButton(
+            child: const Text('Play again'),
+            onPressed: _clearBoard,
+          ),
+        ],
+      ),
+    );
+    if (winner == 'x') {
+      exScore++;
+    } else {
+      ohScore++;
     }
   }
 
@@ -223,65 +187,31 @@ class _VsComputerState extends State<VsComputer> {
     showDialog(
       barrierDismissible: false,
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Draw'),
-          actions: [
-            ElevatedButton(
-              child: Text('Play again'),
-              onPressed: () {
-                _clearBoard();
-                Navigator.of(context).pop();
-              },
-            )
-          ],
-        );
-      },
+      builder: (context) => AlertDialog(
+        title: const Text('Draw'),
+        actions: [
+          ElevatedButton(
+            child: const Text('Play again'),
+            onPressed: _clearBoard,
+          ),
+        ],
+      ),
     );
-  }
-
-  void _showWinDialog(String winner) {
-    showDialog(
-      barrierDismissible: false,
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('WINNER IS $winner'),
-          actions: [
-            ElevatedButton(
-              child: Text('Play again'),
-              onPressed: () {
-                _clearBoard();
-                Navigator.of(context).pop();
-              },
-            )
-          ],
-        );
-      },
-    );
-    if (winner == 'x') {
-      exScore += 1;
-    } else if (winner == 'o') {
-      ohSecore += 1;
-    }
   }
 
   void _clearBoard() {
     setState(() {
-      for (int i = 0; i < 9; i++) {
-        displayExOh[i] = '';
-      }
+      displayExOh = List.generate(9, (_) => '');
+      filledBoxes = 0;
     });
-    filledBoxes = 0;
+    Navigator.of(context).pop();
   }
 
   void _resetGame() {
     setState(() {
       exScore = 0;
-      ohSecore = 0;
-      for (int i = 0; i < 9; i++) {
-        displayExOh[i] = '';
-      }
+      ohScore = 0;
+      displayExOh = List.generate(9, (_) => '');
       filledBoxes = 0;
       ohTurn = true;
     });
