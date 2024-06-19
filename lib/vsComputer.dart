@@ -10,7 +10,7 @@ class VsComputer extends StatefulWidget {
 
 class _VsComputerState extends State<VsComputer> {
   bool ohTurn = true;
-  List<String> displayExOh = List.generate(9, (_) => '');
+  List<String> displayExOh = List.filled(9, '');
   final myTextStyle = const TextStyle(color: Colors.white, fontSize: 30);
   int exScore = 0, ohScore = 0, filledBoxes = 0;
 
@@ -122,22 +122,84 @@ class _VsComputerState extends State<VsComputer> {
   }
 
   void _computerMove() {
-    final availableMoves = <int>[];
-    for (int i = 0; i < 9; i++) {
-      if (displayExOh[i].isEmpty) {
-        availableMoves.add(i);
-      }
-    }
-    final computerIndex =
-        availableMoves[Random().nextInt(availableMoves.length)];
+    int bestMove = getBestMove(displayExOh, 'o');
     setState(() {
-      displayExOh[computerIndex] = 'o';
+      displayExOh[bestMove] = 'o';
       filledBoxes++;
     });
     _checkWinner();
   }
 
-  void _checkWinner() {
+  int getBestMove(List<String> board, String player) {
+    List<int> availableMoves = [];
+    for (int i = 0; i < 9; i++) {
+      if (board[i].isEmpty) {
+        availableMoves.add(i);
+      }
+    }
+
+    if (availableMoves.isEmpty) {
+      return -1;
+    }
+
+    int bestScore = player == 'o' ? -10000 : 10000;
+    int bestMove = -1;
+
+    for (int move in availableMoves) {
+      board[move] = player;
+      int score = minimax(board, !player.contains('o'));
+      board[move] = '';
+      if (player == 'o' && score > bestScore) {
+        bestScore = score;
+        bestMove = move;
+      } else if (player == 'x' && score < bestScore) {
+        bestScore = score;
+        bestMove = move;
+      }
+    }
+
+    return bestMove;
+  }
+
+  int minimax(List<String> board, bool isMaximizing) {
+    String winner = _checkWinnerMinimax(board);
+    if (winner == 'o') {
+      return 10;
+    } else if (winner == 'x') {
+      return -10;
+    } else if (winner == 'Draw') {
+      return 0;
+    }
+
+    List<int> availableMoves = [];
+    for (int i = 0; i < 9; i++) {
+      if (board[i].isEmpty) {
+        availableMoves.add(i);
+      }
+    }
+
+    if (isMaximizing) {
+      int bestScore = -10000;
+      for (int move in availableMoves) {
+        board[move] = 'o';
+        int score = minimax(board, false);
+        board[move] = '';
+        bestScore = max(bestScore, score);
+      }
+      return bestScore;
+    } else {
+      int bestScore = 10000;
+      for (int move in availableMoves) {
+        board[move] = 'x';
+        int score = minimax(board, true);
+        board[move] = '';
+        bestScore = min(bestScore, score);
+      }
+      return bestScore;
+    }
+  }
+
+  String _checkWinnerMinimax(List<String> board) {
     final winningPositions = [
       [0, 1, 2],
       [3, 4, 5],
@@ -149,15 +211,26 @@ class _VsComputerState extends State<VsComputer> {
       [2, 4, 6],
     ];
     for (final positions in winningPositions) {
-      final symbol = displayExOh[positions[0]];
+      final symbol = board[positions[0]];
       if (symbol.isNotEmpty &&
-          symbol == displayExOh[positions[1]] &&
-          symbol == displayExOh[positions[2]]) {
-        _showWinDialog(symbol);
-        return;
+          symbol == board[positions[1]] &&
+          symbol == board[positions[2]]) {
+        return symbol;
       }
     }
-    if (filledBoxes == 9) {
+    for (int i = 0; i < 9; i++) {
+      if (board[i].isEmpty) {
+        return '';
+      }
+    }
+    return 'Draw';
+  }
+
+  void _checkWinner() {
+    String winner = _checkWinnerMinimax(displayExOh);
+    if (winner != '') {
+      _showWinDialog(winner);
+    } else if (filledBoxes == 9) {
       _showDrawDialog();
     }
   }
@@ -188,7 +261,7 @@ class _VsComputerState extends State<VsComputer> {
       barrierDismissible: false,
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Draw'),
+        title: Text('Draw'),
         actions: [
           ElevatedButton(
             child: const Text('Play again'),
